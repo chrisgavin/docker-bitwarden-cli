@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+set -eu
+script_directory="$(dirname "$0")"
+cd "$script_directory/../"
+
+. ./script/build
+
+if [ ! -z "${DOCKERHUB_PASSWORD-}" ]; then
+	echo "$DOCKERHUB_PASSWORD" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+fi
+export DOCKER_CLI_EXPERIMENTAL=enabled
+
+inspect_code=0
+inspect_output="$(docker manifest inspect "$image:$version" 2>&1)" || inspect_code="$?"
+if [ "$inspect_code" -eq 0 ]; then
+	>&2 echo "Tag \"$version\" already exists. Not pushing again."
+	exit 0
+else
+	case "$inspect_output" in
+		*"no such manifest"*)
+			;;
+		*)
+			>&2 echo "$inspect_output"
+			exit "$inspect_code"
+			;;
+	esac
+fi
+
+docker push "$image:$version"
+docker push "$image:latest"

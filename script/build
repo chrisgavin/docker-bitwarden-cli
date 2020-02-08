@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+set -eu
+script_directory="$(dirname "$0")"
+cd "$script_directory/../"
+
+image="chrisgavin/bitwarden-cli"
+version="$(docker run --interactive --rm node npm view @bitwarden/cli version)"
+
+docker build --build-arg VERSION="$version" --tag "$image:$version" --tag "$image:latest" .
